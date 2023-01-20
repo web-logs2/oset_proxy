@@ -8,40 +8,15 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
-	"os"
-	"oset/common/db"
+	"oset/common"
 	"oset/router"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// load config
-	configFile, err := os.Open("./config.json")
-	if err != nil {
-		panic("failed to load config: " + err.Error())
-	}
-
-	configMap := make(map[string]interface{})
-	err = json.NewDecoder(configFile).Decode(&configMap)
-	if err != nil {
-		panic("failed to decode config: " + err.Error())
-	}
-	configFile.Close()
-
-	// init database
-	{
-		host := configMap["db_host"].(string)
-		port := configMap["db_port"].(string)
-		user := configMap["db_user"].(string)
-		pwd := configMap["db_password"].(string)
-		dbName := configMap["db_name"].(string)
-		charset := configMap["db_charset"].(string)
-		loc := configMap["db_loc"].(string)
-		db.InitDB(host, port, user, pwd, dbName, charset, loc)
-	}
+	common.Init()
 
 	// init router
 	r := gin.Default()

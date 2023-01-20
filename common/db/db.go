@@ -14,13 +14,23 @@ import (
 	"net/url"
 	"oset/model"
 
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var gDB *gorm.DB
 
-func InitDB(host string, port string, user string, password string, db string, charset string, loc string) *gorm.DB {
+func InitDB() {
+	db_config := viper.GetStringMapString("mysql")
+	user := db_config["user"]
+	password := db_config["password"]
+	host := db_config["host"]
+	port := db_config["port"]
+	db := db_config["database"]
+	charset := db_config["charset"]
+	loc := db_config["loc"]
+
 	args := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=%s&parseTime=true&loc=%s", user, password, host, port, db, charset, url.QueryEscape(loc))
 	newDB, err := gorm.Open(mysql.Open(args), &gorm.Config{})
 
@@ -30,8 +40,6 @@ func InitDB(host string, port string, user string, password string, db string, c
 
 	gDB = newDB
 	DBMigrate()
-
-	return gDB
 }
 
 func DBMigrate() {
