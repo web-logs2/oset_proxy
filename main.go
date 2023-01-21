@@ -22,5 +22,5 @@ func main() {
 	r := gin.Default()
 	r.StaticFS("/image", http.Dir("./static/image"))
 	router.CollectRoutes(r)
-	panic(r.Run())
+	panic(r.Run("127.0.0.1:8080"))
 }

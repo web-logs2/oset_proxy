@@ -10,18 +10,22 @@
 package common
 
 const (
+	// common
+	StatusCommonOK    = 1001
+	StatusCommonError = 1002
+
 	// auth
-	StatusTokenUnhandled   = 1001
-	StatusGenTokenError    = 1002
-	StatusTokenMalformed   = 1003
-	StatusTokenExpired     = 1004
-	StatusTokenNotValidYet = 1005
+	StatusTokenUnhandled   = 2001
+	StatusGenTokenError    = 2002
+	StatusTokenMalformed   = 2003
+	StatusTokenExpired     = 2004
+	StatusTokenNotValidYet = 2005
 
 	// user
-	StatusUserUnhandled = 2001
-	StatusEmailUsed     = 2002
-	StatusRegisterOk    = 2003
-	StatusUserNotExist  = 2004
-	StatusWrongPassword = 2005
-	StatusLoginOk       = 2006
+	StatusUserUnhandled = 3001
+	StatusEmailUsed     = 3002
+	StatusRegisterOk    = 3003
+	StatusUserNotExist  = 3004
+	StatusWrongPassword = 3005
+	StatusLoginOk       = 3006
 )

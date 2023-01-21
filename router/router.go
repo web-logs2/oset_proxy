@@ -19,5 +19,9 @@ func CollectRoutes(r *gin.Engine) *gin.Engine {
 	r.POST("/register", controller.Register)
 	r.POST("/login", controller.Login)
 
+	sysRoots := r.Group("/sys")
+	sysRoots.GET("/getinit", controller.GetInit)
+	sysRoots.POST("/setinit", controller.SetInit)
+
 	return r
 }
