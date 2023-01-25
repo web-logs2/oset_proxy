@@ -13,10 +13,12 @@ import (
 	"oset/router"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
 	common.Init()
+	defer zap.L().Sync()
 
 	// init router
 	r := gin.Default()

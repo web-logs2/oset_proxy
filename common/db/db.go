@@ -15,6 +15,7 @@ import (
 	"oset/model"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -35,7 +36,7 @@ func InitDB() {
 	newDB, err := gorm.Open(mysql.Open(args), &gorm.Config{})
 
 	if err != nil {
-		panic("failed to open database: " + err.Error())
+		zap.L().Panic("failed to connect to database", zap.String("error", err.Error()))
 	}
 
 	gDB = newDB
@@ -43,7 +44,10 @@ func InitDB() {
 }
 
 func DBMigrate() {
-	gDB.AutoMigrate(&model.User{})
+	err := gDB.AutoMigrate(&model.User{})
+	if err != nil {
+		zap.L().Panic("failed to migrate database", zap.String("error", err.Error()))
+	}
 }
 
 func GetDB() *gorm.DB { return gDB }

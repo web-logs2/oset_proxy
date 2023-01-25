@@ -13,6 +13,7 @@ import (
 	"oset/common/db"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 func Init() {
@@ -25,5 +26,8 @@ func Init() {
 		panic("read config failed: " + err.Error())
 	}
 
+	InitLog()
 	db.InitDB()
+
+	zap.L().Info("initalize oset successfully")
 }
