@@ -20,6 +20,7 @@ var jwtKey = []byte("4420335dd9486c4c41f8d21176e5d37399502d14")
 
 type Claims struct {
 	Uid    int
+	Role   model.RoleType
 	Uname  string
 	Email  string
 	Avatar string
@@ -32,6 +33,7 @@ func GenerateToken(user *model.User) (token string, err error) {
 	expireTime := nowTime.Add(30 * 24 * time.Hour)
 	claims := &Claims{
 		Uid:    user.Uid,
+		Role:   user.Role,
 		Uname:  user.Uname,
 		Email:  user.Email,
 		Avatar: user.Avatar,

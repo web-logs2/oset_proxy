@@ -67,6 +67,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		user := model.User{
 			Uid:    claims.Uid,
+			Role:   claims.Role,
 			Uname:  claims.Uname,
 			Email:  claims.Email,
 			Avatar: claims.Avatar,

@@ -22,10 +22,13 @@ const (
 	StatusTokenNotValidYet = 2005
 
 	// user
-	StatusUserUnhandled = 3001
-	StatusEmailUsed     = 3002
-	StatusRegisterOk    = 3003
-	StatusUserNotExist  = 3004
-	StatusWrongPassword = 3005
-	StatusLoginOk       = 3006
+	StatusUserUnhandled     = 3001
+	StatusEmailUsed         = 3002
+	StatusRegisterOk        = 3003
+	StatusUserNotExist      = 3004
+	StatusWrongPassword     = 3005
+	StatusLoginOk           = 3006
+	StatusUserOk            = 3007
+	StatusUserError         = 3008
+	StatusUserLowPermission = 3009
 )

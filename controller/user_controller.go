@@ -10,6 +10,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -18,9 +19,12 @@ import (
 	"oset/common/auth"
 	"oset/common/db"
 	"oset/model"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -124,5 +128,179 @@ func Login(ctx *gin.Context) {
 		"code": common.StatusLoginOk,
 		"data": gin.H{"token": token},
 		"msg":  "登录成功",
+	})
+}
+
+func GetUserList(ctx *gin.Context) {
+	requestUser, _ := ctx.Get("user")
+	if requestUser.(model.User).Role < model.ROLETYPE_ADMIN {
+		zap.L().Warn("trying to get user list, but permission denied.", zap.Int("uid", requestUser.(model.User).Uid), zap.String("user", requestUser.(model.User).Uname))
+
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"code": common.StatusUserLowPermission,
+			"data": "{}",
+			"msg":  "error",
+		})
+		ctx.Abort()
+		return
+	}
+
+	var users []model.UserInfo
+	resDB := db.GetDB().Table("users").Find(&users)
+
+	if resDB.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusUserError,
+			"data": "{}",
+			"msg":  "error",
+		})
+
+		zap.L().Error("failed to query all user list.", zap.String("error", resDB.Error.Error()))
+		ctx.Abort()
+		return
+	}
+
+	jsonBytes, err := json.Marshal(users)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusUserError,
+			"data": "{}",
+			"msg":  "error",
+		})
+
+		zap.L().Error("failed to query all user list.", zap.String("error", resDB.Error.Error()))
+		ctx.Abort()
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": common.StatusUserOk,
+		"data": string(jsonBytes),
+		"msg":  "success",
+	})
+}
+
+func GetUserInfo(ctx *gin.Context) {
+	requestUser, _ := ctx.Get("user")
+	target, isExist := ctx.GetQuery("target")
+
+	if !isExist {
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": common.StatusUserError,
+			"data": "{}",
+			"msg":  "no target",
+		})
+		ctx.Abort()
+		return
+	}
+
+	if requestUser.(model.User).Role < model.ROLETYPE_ADMIN {
+		zap.L().Warn("trying to get user info, but permission denied.", zap.Int("uid", requestUser.(model.User).Uid), zap.String("user", requestUser.(model.User).Uname), zap.String("targetUser", target))
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"code": common.StatusUserLowPermission,
+			"data": "{}",
+			"msg":  "error",
+		})
+		ctx.Abort()
+		return
+	}
+
+	pattern := `^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$`
+	match, _ := regexp.MatchString(pattern, target)
+
+	var resDB *gorm.DB
+	var targetUser model.UserInfo
+
+	if match {
+		// email
+		resDB = db.GetDB().Table("users").Where("email = ?", target).First(&targetUser)
+	} else if _, err := strconv.Atoi(target); err == nil {
+		// uid
+		resDB = db.GetDB().Table("users").Where("uid = ?", target).First(&targetUser)
+	} else {
+		// uname
+		resDB = db.GetDB().Table("users").Where("uname = ?", target).First(&targetUser)
+	}
+
+	if resDB.Error != nil {
+		if errors.Is(resDB.Error, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusOK, gin.H{
+				"code": common.StatusUserOk,
+				"data": "{}",
+				"msg":  "the user does not exist",
+			})
+			return
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"code": common.StatusUserError,
+				"data": "{}",
+				"msg":  "error",
+			})
+
+			zap.L().Error("search user error", zap.String("target", target), zap.String("error", resDB.Error.Error()))
+			ctx.Abort()
+			return
+		}
+	}
+
+	jsonBytes, err := json.Marshal(targetUser)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusUserError,
+			"data": "{}",
+			"msg":  "error",
+		})
+
+		zap.L().Error("search user error", zap.String("target", target), zap.String("error", resDB.Error.Error()))
+		ctx.Abort()
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": common.StatusUserOk,
+		"data": string(jsonBytes),
+		"msg":  "success",
+	})
+}
+
+func SetUserInfo(ctx *gin.Context) {
+	requestUser, _ := ctx.Get("user")
+	var targetUser model.UserInfo
+	ctx.Bind(&targetUser)
+
+	if requestUser.(model.User).Role < model.ROLETYPE_ADMIN && targetUser.Uid != requestUser.(model.User).Uid {
+		jsonBytes, _ := json.Marshal(targetUser)
+		zap.L().Warn("trying to update user info, but permission denied.", zap.Int("uid", requestUser.(model.User).Uid), zap.String("user", requestUser.(model.User).Uname), zap.Int("target_user", targetUser.Uid), zap.String("target_value", string(jsonBytes)))
+
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"code": common.StatusUserError,
+			"msg":  "error",
+		})
+
+		ctx.Abort()
+		return
+	}
+
+	resDB := db.GetDB().Model(&model.User{}).Where("uid = ?", targetUser.Uid).Updates(model.UserInfo{
+		Uname:  targetUser.Uname,
+		Email:  targetUser.Email,
+		Avatar: targetUser.Avatar,
+	})
+
+	if resDB.Error != nil {
+		zap.L().Error("update user info failed", zap.Int("target_user", targetUser.Uid), zap.String("target_uname", targetUser.Uname), zap.String("target_email", targetUser.Email), zap.String("traget_avatar", targetUser.Avatar), zap.String("error", resDB.Error.Error()))
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusUserError,
+			"msg":  "error",
+		})
+		ctx.Abort()
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": common.StatusUserOk,
+		"msg":  "success",
 	})
 }
