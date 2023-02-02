@@ -1,18 +1,22 @@
-[mysql]
-charset = 'utf8'
-database = 'oset'
-host = 'localhost'
-loc = 'Asia/Shanghai'
-password = '123456'
-port = '3306'
-user = 'root'
-
 [log]
-logPath = 'oset.log'
-maxSize = 10
-maxBackups = 5
-maxAge = 30
 compress = false
+logpath = 'oset.log'
+maxage = 30
+maxbackups = 5
+maxsize = 10
+
+[mysql]
+host = 'localhost'
+port = '3306'
+database = 'oset'
+charset = 'utf8'
+loc = 'Asia/Shanghai'
+user = 'root'
+password = '123456'
+
+[kafka]
+host = 'localhost'
+port = '9092'
 
 [sys]
 inited = false
