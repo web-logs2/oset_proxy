@@ -8,11 +8,33 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
 	"oset/common"
 	"oset/router"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
+
+func gracefullyShutdown(server http.Server) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+
+	<-sig
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		fmt.Println()
+		zap.L().Warn("server shutdown error", zap.String("err", err.Error()))
+	}
+}
 
 func main() {
 	common.Init()
@@ -21,5 +43,19 @@ func main() {
 	// init router
 	r := gin.Default()
 	router.CollectRoutes(r)
-	panic(r.Run("127.0.0.1:8080"))
+
+	server := http.Server{
+		Addr:    "127.0.0.1:8080",
+		Handler: r,
+	}
+
+	// start listening and serving
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic("server listen err: " + err.Error())
+		}
+	}()
+
+	// waiting for shutdown signal
+	gracefullyShutdown(server)
 }

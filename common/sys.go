@@ -10,8 +10,10 @@
 package common
 
 import (
+	"fmt"
 	"oset/common/db"
 	"oset/common/stream"
+	"time"
 
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -35,5 +37,11 @@ func Init() {
 }
 
 func Defer() {
+	fmt.Println()
+
 	zap.L().Sync()
+	fmt.Println("waiting for sync logs to kafka in 1s")
+	time.Sleep(1 * time.Second)
+
+	fmt.Println("server exiting")
 }
