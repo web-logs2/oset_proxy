@@ -1,2 +1,2 @@
-# oset_backend
+# oset_proxy
 One Stop Event Tracking
