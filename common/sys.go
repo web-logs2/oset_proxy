@@ -11,6 +11,7 @@ package common
 
 import (
 	"oset/common/db"
+	"oset/common/stream"
 
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -26,8 +27,13 @@ func Init() {
 		panic("read config failed: " + err.Error())
 	}
 
+	stream.InitKafka()
 	InitLog()
 	db.InitDB()
 
 	zap.L().Info("initalize oset successfully")
+}
+
+func Defer() {
+	zap.L().Sync()
 }

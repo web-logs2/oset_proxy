@@ -10,9 +10,12 @@
 package common
 
 import (
+	"fmt"
 	"os"
+	"oset/common/stream"
 	"time"
 
+	"github.com/hpcloud/tail"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -21,9 +24,51 @@ import (
 
 const (
 	logTimeFormat = "2006-01-02 15:04:05"
+	serverType    = "proxy"
+)
+
+var (
+	tails      *tail.Tail
+	serverName string
 )
 
 func InitLog() {
+	// init tail
+	tailConfig := tail.Config{
+		ReOpen:    true,
+		Follow:    true,
+		Location:  &tail.SeekInfo{Offset: 0, Whence: 2},
+		MustExist: false,
+		Poll:      true,
+	}
+
+	tails_, err := tail.TailFile(viper.GetString("log.logPath"), tailConfig)
+	if err != nil {
+		panic("failed to init log tail: " + err.Error())
+	}
+	tails = tails_
+
+	go func() {
+		var (
+			line *tail.Line
+			ok   bool
+		)
+
+		for {
+			line, ok = <-tails.Lines
+			if !ok {
+				fmt.Printf("tail file close reopen %s\n", tails.Filename)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			// send log to kafka
+			stream.SendLog(line.Text)
+		}
+	}()
+
+	// init zap
+	serverName = viper.GetString("sys.name")
 	core := zapcore.NewTee(
 		zapcore.NewCore(logEncoder(), logFileWriteSyncer(), zapcore.InfoLevel),
 		zapcore.NewCore(logEncoder(), zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout)), zapcore.DebugLevel),
@@ -79,7 +124,7 @@ func logEncodeLevel(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
 }
 
 func logEncodeTime(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString("[" + t.Format(logTimeFormat) + "]")
+	enc.AppendString("[" + t.Format(logTimeFormat) + "] [" + serverType + ":" + serverName + "]")
 }
 
 func logEncodeCaller(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
