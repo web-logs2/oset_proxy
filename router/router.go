@@ -35,5 +35,12 @@ func CollectRoutes(r *gin.Engine) *gin.Engine {
 	userRoutes.GET("info", controller.GetUserInfo)
 	userRoutes.POST("update", controller.SetUserInfo)
 
+	appRoutes := r.Group("/app")
+	appRoutes.Use(middleware.AuthMiddleware())
+	appRoutes.GET("info", controller.GetApp)
+	appRoutes.POST("create", controller.CreateApp)
+	appRoutes.POST("update", controller.UpdateApp)
+	appRoutes.DELETE("delete", controller.DropApp)
+
 	return r
 }

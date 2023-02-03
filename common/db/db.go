@@ -48,6 +48,12 @@ func DBMigrate() {
 	if err != nil {
 		zap.L().Panic("failed to migrate database", zap.String("error", err.Error()))
 	}
+
+	err = gDB.Set("gorm:table_options", "AUTO_INCREMENT=1001").AutoMigrate(&model.App{})
+
+	if err != nil {
+		zap.L().Panic("failed to migrate database", zap.String("error", err.Error()))
+	}
 }
 
 func GetDB() *gorm.DB { return gDB }
