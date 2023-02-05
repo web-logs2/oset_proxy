@@ -14,17 +14,19 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 var (
-	logProducer sarama.SyncProducer
-	// etProducer  sarama.SyncProducer
+	logProducer   sarama.SyncProducer
+	eventProducer sarama.SyncProducer
 )
 
 func InitKafka() {
 	host := viper.GetString("kafka.host")
 	port := viper.GetString("kafka.port")
 
+	// log producer
 	logProducerConfig := sarama.NewConfig()
 	logProducerConfig.Producer.RequiredAcks = sarama.WaitForAll
 	logProducerConfig.Producer.Partitioner = sarama.NewRandomPartitioner
@@ -33,10 +35,24 @@ func InitKafka() {
 
 	logProducer_, err := sarama.NewSyncProducer([]string{fmt.Sprintf("%s:%s", host, port)}, logProducerConfig)
 	if err != nil {
-		panic("producer closed, err: " + err.Error())
+		panic("log producer closed, err: " + err.Error())
 	}
 
 	logProducer = logProducer_
+
+	// event producer
+	eventProducerConfig := sarama.NewConfig()
+	eventProducerConfig.Producer.RequiredAcks = sarama.WaitForAll
+	eventProducerConfig.Producer.Partitioner = sarama.NewRandomPartitioner
+	eventProducerConfig.Producer.Return.Successes = true
+	eventProducerConfig.Version = sarama.V3_2_2_0
+
+	eventProducer_, err := sarama.NewSyncProducer([]string{fmt.Sprintf("%s:%s", host, port)}, eventProducerConfig)
+	if err != nil {
+		panic("event producer closed, err: " + err.Error())
+	}
+
+	eventProducer = eventProducer_
 }
 
 func SendLog(log string) {
@@ -47,5 +63,16 @@ func SendLog(log string) {
 	_, _, err := logProducer.SendMessage(msg)
 	if err != nil {
 		fmt.Println("send msg failed, err: " + err.Error())
+	}
+}
+
+func SendEvent(event string) {
+	msg := &sarama.ProducerMessage{}
+	msg.Topic = "events"
+	msg.Value = sarama.StringEncoder(event)
+
+	_, _, err := eventProducer.SendMessage(msg)
+	if err != nil {
+		zap.L().Error("failed to send event message", zap.String("err", err.Error()))
 	}
 }

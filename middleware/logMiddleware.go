@@ -10,7 +10,7 @@
 package middleware
 
 import (
-	"io/ioutil"
+	"oset/common/stream"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,8 +21,16 @@ func GinLogger() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		query := ctx.Request.URL.RawQuery
-		bodyBytes, _ := ioutil.ReadAll(ctx.Request.Body)
-		body := string(bodyBytes)
+
+		var body string
+		bodyBytes, err := stream.GetRawBody(ctx)
+		if err != nil {
+			zap.L().Error("failed to get request body", zap.String("err", err.Error()))
+			body = ""
+		} else {
+			body = string(bodyBytes)
+		}
+
 		start := time.Now()
 		ctx.Next()
 		elapsed := time.Since(start).Milliseconds()
