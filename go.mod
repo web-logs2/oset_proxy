@@ -9,7 +9,7 @@ require (
 	github.com/spf13/viper v1.14.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.5.0
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gorm.io/driver/mysql v1.4.5
 	gorm.io/gorm v1.24.3
 )
@@ -71,6 +71,7 @@ require (
 require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/hpcloud/tail v1.0.0
+	github.com/natefinch/lumberjack v2.0.0+incompatible
 )
 
 replace github.com/Dizzrt/go-sse => /Users/bytedance/Desktop/go-sse
