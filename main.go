@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"oset/common"
+	"oset/common/oset"
 	"oset/router"
 	"syscall"
 	"time"
@@ -37,8 +37,8 @@ func gracefullyShutdown(server http.Server) {
 }
 
 func main() {
-	common.Init()
-	defer common.Defer()
+	oset.Init()
+	defer oset.Defer()
 
 	// init router
 	r := gin.Default()

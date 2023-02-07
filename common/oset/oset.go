@@ -7,11 +7,13 @@
 // the LICENSE file in the root directory of this source tree.
 //
 
-package common
+package oset
 
 import (
 	"fmt"
 	"oset/common/db"
+	"oset/common/log"
+	"oset/common/oset/info"
 	"oset/common/stream"
 	"time"
 
@@ -29,8 +31,9 @@ func Init() {
 		panic("read config failed: " + err.Error())
 	}
 
+	info.Init()
 	stream.InitKafka()
-	InitLog()
+	log.InitLog()
 	db.InitDB()
 
 	zap.L().Info("initalize oset successfully")
