@@ -10,10 +10,12 @@
 package log
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"oset/common/oset/info"
 	"oset/common/stream"
+	"regexp"
 	"time"
 
 	"github.com/hpcloud/tail"
@@ -49,20 +51,41 @@ func InitLog() {
 
 	go func() {
 		var (
-			line *tail.Line
-			ok   bool
+			line    *tail.Line
+			ok      bool
+			isMatch bool
 		)
 
-		for {
-			line, ok = <-tails.Lines
-			if !ok {
-				fmt.Printf("tail file close reopen %s\n", tails.Filename)
-				time.Sleep(1 * time.Second)
-				continue
-			}
+		buffer := bytes.NewBufferString("")
+		reg, err := regexp.Compile(`\[.*\]\t\[.*\].*`)
+		if err != nil {
+			Panic(err.Error())
+		}
 
-			// send log to kafka
-			stream.SendLog(line.Text)
+		defer func() {
+			if buffer.Len() > 0 {
+				stream.SendLog(buffer.String())
+			}
+		}()
+
+		for {
+			select {
+			case <-info.QuitSig:
+				return
+			case line, ok = <-tails.Lines:
+				if !ok {
+					fmt.Printf("tail file close reopen %s\n", tails.Filename)
+					time.Sleep(1 * time.Second)
+					continue
+				}
+
+				isMatch = reg.MatchString(line.Text)
+				if isMatch && buffer.Len() > 0 {
+					stream.SendLog(buffer.String())
+					buffer.Reset()
+				}
+				buffer.WriteString(fmt.Sprintf("%s\n", line.Text))
+			}
 		}
 	}()
 

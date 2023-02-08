@@ -40,11 +40,13 @@ func Init() {
 }
 
 func Defer() {
-	fmt.Println()
+	fmt.Printf("\nstopping oset...\n")
 
 	zap.L().Sync()
-	fmt.Println("waiting for sync logs to kafka in 1s")
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Second)
 
-	fmt.Println("server exiting")
+	close(info.QuitSig)
+	time.Sleep(time.Second)
+
+	fmt.Println("successfully stopped oset")
 }

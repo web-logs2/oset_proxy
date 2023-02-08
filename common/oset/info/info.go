@@ -18,9 +18,11 @@ const (
 )
 
 var (
+	QuitSig    chan struct{}
 	ServerName string
 )
 
 func Init() {
+	QuitSig = make(chan struct{})
 	ServerName = viper.GetString("sys.name")
 }
