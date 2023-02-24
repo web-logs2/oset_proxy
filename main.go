@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Dizzrt/etlog"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -32,7 +33,7 @@ func gracefullyShutdown(server http.Server) {
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
 		fmt.Println()
-		zap.L().Warn("server shutdown error", zap.String("err", err.Error()))
+		etlog.L().Warn("server shutdown error", zap.String("err", err.Error()))
 	}
 }
 

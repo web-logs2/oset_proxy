@@ -11,10 +11,9 @@ package oset
 
 import (
 	"fmt"
+	"oset/common/component/log"
 	"oset/common/db"
-	"oset/common/log"
 	"oset/common/oset/info"
-	"oset/common/stream"
 	"time"
 
 	"github.com/spf13/viper"
@@ -32,11 +31,9 @@ func Init() {
 	}
 
 	info.Init()
-	stream.InitKafka()
+	// stream.InitKafka()
 	log.InitLog()
 	db.InitDB()
-
-	zap.L().Info("initalize oset successfully")
 }
 
 func Defer() {

@@ -1,9 +1,16 @@
 [log]
-compress = false
-logpath = 'oset.log'
-maxage = 30
-maxbackups = 5
-maxsize = 10
+reporter_type = 'proxy'
+reporter_name = 'debug_proxy'
+file_path = 'oset.log'
+max_file_size = 10
+max_backups = 5
+max_age = 30
+is_compress = false
+
+[log.kafka]
+is_enable = true
+host = '127.0.0.1:9092'
+topic = 'log'
 
 [mysql]
 host = 'localhost'
