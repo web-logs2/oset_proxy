@@ -13,11 +13,12 @@ import (
 	"fmt"
 	"oset/common/component/log"
 	"oset/common/db"
-	"oset/common/oset/info"
+	"oset/controller"
 	"time"
 
+	"github.com/Dizzrt/etfoundation/sig"
+	"github.com/Dizzrt/etlog"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 func Init() {
@@ -30,8 +31,7 @@ func Init() {
 		panic("read config failed: " + err.Error())
 	}
 
-	info.Init()
-	// stream.InitKafka()
+	controller.InitEvent()
 	log.InitLog()
 	db.InitDB()
 }
@@ -39,10 +39,10 @@ func Init() {
 func Defer() {
 	fmt.Printf("\nstopping oset...\n")
 
-	zap.L().Sync()
+	etlog.L().Sync()
 	time.Sleep(time.Second)
 
-	close(info.QuitSig)
+	sig.DoQuit()
 	time.Sleep(time.Second)
 
 	fmt.Println("successfully stopped oset")

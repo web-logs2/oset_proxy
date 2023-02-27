@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/Dizzrt/etfoundation v0.0.0-20230217120540-b21df4c35cb5 // indirect
+	github.com/Shopify/sarama v1.38.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.3.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230111030713-bf00bc1b83b6 // indirect
@@ -68,7 +68,8 @@ require (
 )
 
 require (
+	github.com/Dizzrt/etfoundation v0.0.0-20230217120540-b21df4c35cb5
 	github.com/Dizzrt/etlog v0.0.0-20230223134043-102cda267be0
 	github.com/Dizzrt/etstream v0.0.0
-	github.com/Shopify/sarama v1.38.1
+	github.com/Dizzrt/go-sse v0.0.0-20210127090701-c17ce60f95eb
 )
