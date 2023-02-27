@@ -43,7 +43,7 @@ func CollectRoutes(r *gin.Engine) *gin.Engine {
 	appRoutes.DELETE("delete", controller.DropApp)
 
 	eventRoutes := r.Group("/event")
-	eventRoutes.POST("report", controller.ReportEvent)
-
+	eventRoutes.POST("report/:aid", controller.ReportEvent)
+	eventRoutes.GET("tool/realtime/:aid/:did", controller.RegisterRealtimeEvent)
 	return r
 }
