@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"oset/model"
 
+	"github.com/Dizzrt/etlog"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
@@ -36,7 +37,7 @@ func InitDB() {
 	newDB, err := gorm.Open(mysql.Open(args), &gorm.Config{})
 
 	if err != nil {
-		zap.L().Panic("failed to connect to database", zap.String("error", err.Error()))
+		etlog.L().Panic("failed to connect to database", zap.String("error", err.Error()))
 	}
 
 	gDB = newDB
@@ -46,13 +47,12 @@ func InitDB() {
 func DBMigrate() {
 	err := gDB.AutoMigrate(&model.User{})
 	if err != nil {
-		zap.L().Panic("failed to migrate database", zap.String("error", err.Error()))
+		etlog.L().Panic("failed to migrate user table", zap.Error(err))
 	}
 
 	err = gDB.Set("gorm:table_options", "AUTO_INCREMENT=1001").AutoMigrate(&model.App{})
-
 	if err != nil {
-		zap.L().Panic("failed to migrate database", zap.String("error", err.Error()))
+		etlog.L().Panic("failed to migrate app table", zap.Error(err))
 	}
 }
 
