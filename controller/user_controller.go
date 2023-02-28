@@ -17,7 +17,8 @@ import (
 	"net/http"
 	"oset/common"
 	"oset/common/auth"
-	"oset/common/db"
+	"oset/db"
+
 	"oset/model"
 	"regexp"
 	"strconv"
@@ -30,13 +31,11 @@ import (
 )
 
 func Register(ctx *gin.Context) {
-	_db := db.GetDB()
-
 	var requestUser model.User
 	ctx.Bind(&requestUser)
 
 	var user model.User
-	resDB := _db.First(&user, "email = ?", requestUser.Email)
+	resDB := db.Mysql().First(&user, "email = ?", requestUser.Email)
 	if !errors.Is(resDB.Error, gorm.ErrRecordNotFound) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"code": common.StatusEmailUsed,
@@ -54,7 +53,7 @@ func Register(ctx *gin.Context) {
 	for {
 		// uid range 1000000~9999999
 		uid = rand.Intn(8999999) + 1000000
-		resDB = _db.First(&user, uid)
+		resDB = db.Mysql().First(&user, uid)
 		if errors.Is(resDB.Error, gorm.ErrRecordNotFound) {
 			break
 		}
@@ -69,7 +68,7 @@ func Register(ctx *gin.Context) {
 		Avatar:   "/images/avatar.png",
 	}
 
-	_db.Create(&user)
+	db.Mysql().Create(&user)
 	ctx.JSON(http.StatusOK, gin.H{
 		"code": common.StatusRegisterOk,
 		"msg":  "注册成功",
@@ -77,13 +76,11 @@ func Register(ctx *gin.Context) {
 }
 
 func Login(ctx *gin.Context) {
-	_db := db.GetDB()
-
 	var requestUser model.User
 	ctx.Bind(&requestUser)
 
 	var user model.User
-	resDB := _db.First(&user, "email = ?", requestUser.Email)
+	resDB := db.Mysql().First(&user, "email = ?", requestUser.Email)
 	if errors.Is(resDB.Error, gorm.ErrRecordNotFound) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"code": common.StatusUserNotExist,
@@ -146,7 +143,7 @@ func GetUserList(ctx *gin.Context) {
 	}
 
 	var users []model.UserInfo
-	resDB := db.GetDB().Table("users").Find(&users)
+	resDB := db.Mysql().Table("users").Find(&users)
 
 	if resDB.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -214,13 +211,13 @@ func GetUserInfo(ctx *gin.Context) {
 
 	if match {
 		// email
-		resDB = db.GetDB().Table("users").Where("email = ?", target).First(&targetUser)
+		resDB = db.Mysql().Table("users").Where("email = ?", target).First(&targetUser)
 	} else if _, err := strconv.Atoi(target); err == nil {
 		// uid
-		resDB = db.GetDB().Table("users").Where("uid = ?", target).First(&targetUser)
+		resDB = db.Mysql().Table("users").Where("uid = ?", target).First(&targetUser)
 	} else {
 		// uname
-		resDB = db.GetDB().Table("users").Where("uname = ?", target).First(&targetUser)
+		resDB = db.Mysql().Table("users").Where("uname = ?", target).First(&targetUser)
 	}
 
 	if resDB.Error != nil {
@@ -282,7 +279,7 @@ func SetUserInfo(ctx *gin.Context) {
 		return
 	}
 
-	resDB := db.GetDB().Model(&model.User{}).Where("uid = ?", targetUser.Uid).Updates(model.UserInfo{
+	resDB := db.Mysql().Model(&model.User{}).Where("uid = ?", targetUser.Uid).Updates(model.UserInfo{
 		Uname:  targetUser.Uname,
 		Email:  targetUser.Email,
 		Avatar: targetUser.Avatar,

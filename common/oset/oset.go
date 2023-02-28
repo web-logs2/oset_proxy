@@ -12,8 +12,8 @@ package oset
 import (
 	"fmt"
 	"oset/common/component/log"
-	"oset/common/db"
 	"oset/controller"
+	"oset/db"
 	"time"
 
 	"github.com/Dizzrt/etfoundation/sig"
@@ -33,7 +33,8 @@ func Init() {
 
 	controller.InitEvent()
 	log.InitLog()
-	db.InitDB()
+	db.InitMysqlFromViper()
+	db.InitRedisFromViper()
 }
 
 func Defer() {
