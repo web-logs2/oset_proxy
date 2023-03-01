@@ -14,10 +14,12 @@ import (
 	"errors"
 	"net/http"
 	"oset/common"
-	"oset/common/db"
+	"oset/db"
+
 	"oset/model"
 	"strconv"
 
+	"github.com/Dizzrt/etlog"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -30,36 +32,60 @@ import (
 
 func CreateApp(ctx *gin.Context) {
 	requestUser, _ := ctx.Get("user")
+	ruser := requestUser.(model.User)
 
-	var newApp model.App
-	ctx.Bind(&newApp)
+	newApp := model.App{}
+	err := ctx.BindJSON(&newApp)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "create new app failed",
+		})
+		ctx.Abort()
 
-	_db := db.GetDB()
-	res := _db.Create(&newApp)
+		etlog.L().Error("unable to create new app, because bindjson failed", zap.Int("operator_uid", ruser.Uid), zap.Error(err))
+		return
+	}
 
+	if newApp.Name == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"msg": "create new app failed, the new app has no name",
+		})
+		ctx.Abort()
+
+		etlog.L().Warn("unable to create new app, because app name is empty", zap.Any("new_app", newApp), zap.Int("operatpr_uid", ruser.Uid))
+		return
+	}
+
+	if newApp.Icon == "" {
+		newApp.Icon = "/images/defaultIcon.png"
+	}
+
+	res := db.Mysql().Create(&newApp)
 	if res.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"code": common.StatusCommonError,
 			"msg":  "failed to create App, " + res.Error.Error(),
 		})
-		zap.L().Error("failed to create App", zap.String("err", res.Error.Error()))
 		ctx.Abort()
+
+		etlog.L().Error("unable to create new app", zap.Error(res.Error))
 	} else {
 		ctx.JSON(http.StatusOK, gin.H{
 			"code": common.StatusCommonOK,
 			"msg":  newApp.Name + " successfully created",
 		})
-		zap.L().Info("create new app", zap.String("app_name", newApp.Name), zap.Int("creator", requestUser.(model.User).Uid))
+		etlog.L().Info("created new app", zap.String("app_name", newApp.Name), zap.Int("operator_uid", ruser.Uid))
 	}
 }
 
 func UpdateApp(ctx *gin.Context) {
 	requestUser, _ := ctx.Get("user")
+	ruser := requestUser.(model.User)
 
 	var newAppInfo model.App
-	ctx.Bind(&newAppInfo)
+	ctx.BindJSON(&newAppInfo)
 
-	res := db.GetDB().Model(&model.App{}).Where("aid = ?", newAppInfo.Aid).Updates(model.App{
+	res := db.Mysql().Model(&model.App{}).Where("aid = ?", newAppInfo.Aid).Updates(model.App{
 		Icon:        newAppInfo.Icon,
 		Name:        newAppInfo.Name,
 		Description: newAppInfo.Description,
@@ -71,7 +97,7 @@ func UpdateApp(ctx *gin.Context) {
 			"msg":  "failed to update App info",
 		})
 
-		zap.L().Error("update App info failed", zap.Int("aid", newAppInfo.Aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", res.Error.Error()))
+		etlog.L().Error("update App info failed", zap.Int("aid", newAppInfo.Aid), zap.Any("new_info", newAppInfo), zap.Int("uid", ruser.Uid), zap.Error(res.Error))
 		ctx.Abort()
 		return
 	}
@@ -86,7 +112,7 @@ func DropApp(ctx *gin.Context) {
 	requestUser, _ := ctx.Get("user")
 	aid, err := strconv.Atoi(ctx.Query("aid"))
 	if err != nil {
-		zap.L().Error("delete app failed", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", err.Error()))
+		etlog.L().Error("delete app failed", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", err.Error()))
 
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"code": common.StatusCommonError,
@@ -96,9 +122,9 @@ func DropApp(ctx *gin.Context) {
 		return
 	}
 
-	res := db.GetDB().Delete(&model.App{}, aid)
+	res := db.Mysql().Delete(&model.App{}, aid)
 	if res.Error != nil {
-		zap.L().Error("delete app failed", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", res.Error.Error()))
+		etlog.L().Error("delete app failed", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", res.Error.Error()))
 
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"code": common.StatusCommonError,
@@ -119,7 +145,7 @@ func GetApp(ctx *gin.Context) {
 	aid, err := strconv.Atoi(ctx.Query("aid"))
 
 	if err != nil {
-		zap.L().Error("get app info failed", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", err.Error()))
+		etlog.L().Error("get app info failed", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", err.Error()))
 
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"code": common.StatusCommonError,
@@ -130,7 +156,7 @@ func GetApp(ctx *gin.Context) {
 	}
 
 	var targetApp model.App
-	res := db.GetDB().Where("aid = ?", aid).First(&targetApp)
+	res := db.Mysql().Where("aid = ?", aid).First(&targetApp)
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
@@ -141,7 +167,7 @@ func GetApp(ctx *gin.Context) {
 			})
 			return
 		} else {
-			zap.L().Error("search app error", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", res.Error.Error()))
+			etlog.L().Error("search app error", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", res.Error.Error()))
 
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"code": common.StatusCommonError,
@@ -161,7 +187,7 @@ func GetApp(ctx *gin.Context) {
 			"msg":  "error",
 		})
 
-		zap.L().Error("search app error", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("error", res.Error.Error()))
+		etlog.L().Error("search app error", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("error", res.Error.Error()))
 		ctx.Abort()
 		return
 	}
