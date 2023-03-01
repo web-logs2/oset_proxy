@@ -1,13 +1,13 @@
 //
-// File: init.go
-// Created by Dizzrt on 2023/01/18.
+// File: life.go
+// Created by Dizzrt on 2023/02/28.
 //
 // Copyright (C) 2023 The oset Authors.
 // This source code is licensed under the MIT license found in
 // the LICENSE file in the root directory of this source tree.
 //
 
-package oset
+package main
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func Init() {
+func init() {
 	viper.SetConfigName(".config")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
@@ -31,8 +31,8 @@ func Init() {
 		panic("read config failed: " + err.Error())
 	}
 
-	controller.InitEvent()
 	log.InitLog()
+	controller.InitEvent()
 	db.InitMysqlFromViper()
 	db.InitRedisFromViper()
 }

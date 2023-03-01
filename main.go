@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"oset/common/oset"
+
 	"oset/router"
 	"syscall"
 	"time"
@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func gracefullyShutdown(server http.Server) {
+func gracefullyShutdown(server *http.Server) {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
@@ -38,8 +38,7 @@ func gracefullyShutdown(server http.Server) {
 }
 
 func main() {
-	oset.Init()
-	defer oset.Defer()
+	defer Defer()
 
 	// init router
 	r := gin.Default()
@@ -58,5 +57,5 @@ func main() {
 	}()
 
 	// waiting for shutdown signal
-	gracefullyShutdown(server)
+	gracefullyShutdown(&server)
 }
