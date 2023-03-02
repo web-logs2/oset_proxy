@@ -11,7 +11,7 @@ package main
 
 import (
 	"fmt"
-	"oset/common/component/log"
+	"oset/component/log"
 	"oset/controller"
 	"oset/db"
 	"time"
