@@ -10,13 +10,16 @@
 package auth
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"math/rand"
 	"oset/model"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/spf13/viper"
 )
-
-var jwtKey = []byte("4420335dd9486c4c41f8d21176e5d37399502d14")
 
 type Claims struct {
 	Uid    int
@@ -25,6 +28,30 @@ type Claims struct {
 	Email  string
 	Avatar string
 	jwt.RegisteredClaims
+}
+
+var (
+	jwtKey     []byte
+	jwtKeyInit sync.Once
+)
+
+func JwtKey() []byte {
+	jwtKeyInit.Do(func() {
+		jwtKey = []byte(viper.GetString("sys.jwt_key"))
+		if len(jwtKey) == 0 {
+			rand.Seed(time.Now().UnixNano())
+			sbytes := make([]byte, 256)
+			rand.Read(sbytes)
+
+			hash := sha256.New()
+			hash.Write(sbytes)
+			jwtKeyS := hex.EncodeToString(hash.Sum(nil))
+			jwtKey = []byte(jwtKeyS)
+			viper.Set("sys.jwt_key", jwtKeyS)
+		}
+	})
+
+	return jwtKey
 }
 
 func GenerateToken(user *model.User) (token string, err error) {
@@ -44,14 +71,14 @@ func GenerateToken(user *model.User) (token string, err error) {
 	}
 
 	_token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err = _token.SignedString(jwtKey)
+	token, err = _token.SignedString(JwtKey())
 	return
 }
 
 func ParseToken(tokenString string) (token *jwt.Token, claims *Claims, err error) {
 	claims = &Claims{}
 	token, err = jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
+		return JwtKey(), nil
 	})
 
 	return

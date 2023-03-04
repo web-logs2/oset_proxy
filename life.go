@@ -41,6 +41,7 @@ func Defer() {
 	fmt.Printf("\nstopping oset...\n")
 
 	etlog.L().Sync()
+	viper.WriteConfig()
 	time.Sleep(time.Second)
 
 	sig.DoQuit()
