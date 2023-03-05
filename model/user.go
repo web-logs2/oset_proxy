@@ -9,30 +9,30 @@
 
 package model
 
-type RoleType int
+type UserLevel int
 
 const (
-	ROLETYPE_NORMAL = iota
-	ROLETYPE_ADMIN
+	USERLEVEL_NORMAL = iota
+	USERLEVEL_ADMIN
 )
 
 type User struct {
-	Uid       int      `gorm:"primaryKey" json:"uid" form:"uid"`
-	Role      RoleType `gorm:"not null" json:"role" form:"role"`
-	Uname     string   `gorm:"size:32;not null" json:"uname" form:"uname"`
-	Password  string   `gorm:"size:255;not null" json:"password" form:"password"`
-	Email     string   `gorm:"size:64;not null" json:"email" form:"email"`
-	Avatar    string   `gorm:"size:255;not null" json:"avatar" form:"avatar"`
-	Activated bool     `gorm:"bool;default:false" json:"activated" form:"activated"`
+	Uid       int       `gorm:"primaryKey" json:"uid" form:"uid"`
+	Level     UserLevel `gorm:"not null" json:"level" form:"level"`
+	Uname     string    `gorm:"size:32;not null" json:"uname" form:"uname"`
+	Password  string    `gorm:"size:255;not null" json:"password" form:"password"`
+	Email     string    `gorm:"size:64;not null" json:"email" form:"email"`
+	Avatar    string    `gorm:"size:255;not null" json:"avatar" form:"avatar"`
+	Activated bool      `gorm:"bool;default:false" json:"activated" form:"activated"`
 	CreatedAt int
 	UpdatedAt int
 }
 
 type UserInfo struct {
-	Uid       int      `gorm:"primaryKey" json:"uid" form:"uid"`
-	Role      RoleType `gorm:"not null" json:"role" form:"role"`
-	Uname     string   `gorm:"size:32;not null" json:"uname" form:"uname"`
-	Email     string   `gorm:"size:64;not null" json:"email" form:"email"`
-	Avatar    string   `gorm:"size:255;not null" json:"avatar" form:"avatar"`
-	Activated bool     `gorm:"bool;default:false" json:"activated" form:"activated"`
+	Uid       int       `gorm:"primaryKey" json:"uid" form:"uid"`
+	Level     UserLevel `gorm:"not null" json:"level" form:"level"`
+	Uname     string    `gorm:"size:32;not null" json:"uname" form:"uname"`
+	Email     string    `gorm:"size:64;not null" json:"email" form:"email"`
+	Avatar    string    `gorm:"size:255;not null" json:"avatar" form:"avatar"`
+	Activated bool      `gorm:"bool;default:false" json:"activated" form:"activated"`
 }

@@ -23,7 +23,7 @@ import (
 
 type Claims struct {
 	Uid    int
-	Role   model.RoleType
+	Level  model.UserLevel
 	Uname  string
 	Email  string
 	Avatar string
@@ -60,7 +60,7 @@ func GenerateToken(user *model.User) (token string, err error) {
 	expireTime := nowTime.Add(30 * 24 * time.Hour)
 	claims := &Claims{
 		Uid:    user.Uid,
-		Role:   user.Role,
+		Level:  user.Level,
 		Uname:  user.Uname,
 		Email:  user.Email,
 		Avatar: user.Avatar,
