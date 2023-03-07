@@ -10,34 +10,53 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"oset/auth"
 	"oset/common"
-	"oset/common/auth"
+	"oset/db"
 	"oset/model"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/Dizzrt/etlog"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
+
+func abortCtx(ctx *gin.Context, code int, msg string) {
+	ctx.JSON(code, gin.H{
+		"msg": msg,
+	})
+	ctx.Abort()
+}
+
+func abortCtxWithUnauthorized(ctx *gin.Context) {
+	abortCtx(ctx, http.StatusUnauthorized, "权限不足")
+}
+
+func abortCtxWithUnhandleError(ctx *gin.Context) {
+	abortCtx(ctx, http.StatusInternalServerError, "authentication failed, unhandle error")
+}
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		tokenString := ctx.Request.Header.Get("Authorization")
 
 		if tokenString == "" || len(tokenString) < 7 || !strings.HasPrefix(tokenString, "Bearer") {
-			ctx.JSON(http.StatusUnauthorized, gin.H{
-				"code": common.StatusTokenMalformed,
-				"msg":  "权限不足",
-			})
-			ctx.Abort()
+			abortCtxWithUnauthorized(ctx)
 			return
 		}
 
 		tokenString = tokenString[7:]
 		token, claims, err := auth.ParseToken(tokenString)
 
+		// 检查token是否有效
 		if !token.Valid {
 			var code int
 			if errors.Is(err, jwt.ErrTokenMalformed) {
@@ -65,9 +84,22 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 检查是否处于启用状态
+		isActive, err := checkIfActiveByUid(claims.Uid)
+		if err != nil {
+			etlog.L().Error(err.Error())
+			abortCtxWithUnhandleError(ctx)
+			return
+		}
+
+		if !isActive {
+			abortCtxWithUnauthorized(ctx)
+			return
+		}
+
 		user := model.User{
 			Uid:    claims.Uid,
-			Role:   claims.Role,
+			Level:  claims.Level,
 			Uname:  claims.Uname,
 			Email:  claims.Email,
 			Avatar: claims.Avatar,
@@ -75,4 +107,25 @@ func AuthMiddleware() gin.HandlerFunc {
 		ctx.Set("user", user)
 		ctx.Next()
 	}
+}
+
+func checkIfActiveByUid(uid int) (isActive bool, err error) {
+	rctx := context.Background()
+	uidString := strconv.Itoa(uid)
+
+	isActive, err = db.Redis().Get(rctx, uidString).Bool()
+	// redis 中不存在，去 mysql 中查找并记录在 redis 中
+	if err != nil && errors.Is(err, redis.Nil) {
+		err = nil
+
+		res := db.Mysql().Model(&model.User{}).Select("activated").Where("uid = ?", uid).First(&isActive)
+		if res.Error != nil && !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			err = res.Error
+			return
+		}
+
+		err = db.Redis().Set(rctx, uidString, isActive, time.Second*60).Err()
+	}
+
+	return
 }
