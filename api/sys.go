@@ -1,5 +1,5 @@
 //
-// File: common_controller.go
+// File: sys.go
 // Created by Dizzrt on 2023/01/21.
 //
 // Copyright (C) 2023 The oset Authors.
@@ -7,7 +7,7 @@
 // the LICENSE file in the root directory of this source tree.
 //
 
-package controller
+package api
 
 import (
 	"net/http"

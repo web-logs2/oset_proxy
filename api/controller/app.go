@@ -1,5 +1,5 @@
 //
-// File: app_controller.go
+// File: app.go
 // Created by Dizzrt on 2023/02/01.
 //
 // Copyright (C) 2023 The oset Authors.

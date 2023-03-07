@@ -1,5 +1,5 @@
 //
-// File: et_controller.go
+// File: event.go
 // Created by Dizzrt on 2023/01/31.
 //
 // Copyright (C) 2023 The oset Authors.

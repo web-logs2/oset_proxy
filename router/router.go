@@ -11,7 +11,8 @@ package router
 
 import (
 	"net/http"
-	"oset/controller"
+	"oset/api"
+	"oset/api/controller"
 	"oset/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -22,18 +23,19 @@ func CollectRoutes(r *gin.Engine) *gin.Engine {
 	r.Use(middleware.CORSMiddleware())
 	r.StaticFS("/image", http.Dir("../static/image"))
 
-	r.POST("/register", controller.Register)
 	r.POST("/login", controller.Login)
 
 	sysRoutes := r.Group("/sys")
-	sysRoutes.GET("/getinit", controller.GetInit)
-	sysRoutes.POST("/setinit", controller.SetInit)
+	sysRoutes.GET("/getinit", api.GetInit)
+	sysRoutes.POST("/setinit", api.SetInit)
 
 	userRoutes := r.Group("/user")
 	userRoutes.Use(middleware.AuthMiddleware())
 	userRoutes.GET("list", controller.GetUserList)
 	userRoutes.GET("info", controller.GetUserInfo)
 	userRoutes.POST("update", controller.SetUserInfo)
+	userRoutes.POST("create", controller.CreateUser)
+	userRoutes.DELETE("drop", controller.DropUser)
 
 	appRoutes := r.Group("/app")
 	appRoutes.Use(middleware.AuthMiddleware())
