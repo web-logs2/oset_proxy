@@ -18,13 +18,16 @@ import (
 	"encoding/json"
 	"errors"
 	"oset/db"
-	"sort"
-	"strings"
 	"time"
+
+	"github.com/Dizzrt/etlog"
+	"gorm.io/gorm"
 )
 
 var (
-	ErrSignatureInvalid = errors.New("signature invalid")
+	ErrSignatureInvalid  = errors.New("signature invalid")
+	ErrNotFoundSecretKey = errors.New("secret not found")
+	ErrAccessKeyExpired  = errors.New("access key has expired")
 )
 
 type AKSK struct {
@@ -97,17 +100,55 @@ func GenerateAKSK(aid int, expireTime time.Duration, description string) (ak str
 	return
 }
 
-func Validate(sk string, sign string, elems ...string) error {
+func getSK(ak string) (sk string, err error) {
+	rc := context.Background()
+	sk = db.Redis().Get(rc, ak).Val()
+
+	if sk == "" {
+		var aksk AKSK
+		res := db.Mysql().Model(&AKSKExtension{}).Select("sk", "aid", "expire_time").Where("ak = ?", ak).First(&aksk)
+		if res.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				err = ErrNotFoundSecretKey
+				return
+			} else {
+				err = res.Error
+				etlog.L().Error(err.Error())
+				return
+			}
+		}
+
+		if aksk.ExpireTime > 0 {
+			t := time.Since(time.Unix(aksk.ExpireTime, 0))
+			if t > 0 {
+				err = ErrAccessKeyExpired
+				return
+			}
+		}
+
+		sk = aksk.Sk
+		db.Redis().Set(rc, ak, aksk.Sk, 0)
+		if aksk.ExpireTime > 0 {
+			db.Redis().ExpireAt(rc, ak, time.Unix(aksk.ExpireTime, 0))
+		}
+	}
+
+	return
+}
+
+func ValidateSignature(ak string, sign string, content string) error {
+	sk, err := getSK(ak)
+	if err != nil {
+		return err
+	}
+
 	signBytes, err := hex.DecodeString(sign)
 	if err != nil {
 		return err
 	}
 
-	sort.Strings(elems)
-	s := strings.Join(elems, "")
-
 	hash := hmac.New(sha256.New, []byte(sk))
-	hash.Write([]byte(s))
+	hash.Write([]byte(content))
 	ss := hash.Sum(nil)
 
 	if ok := hmac.Equal(signBytes, ss); !ok {
