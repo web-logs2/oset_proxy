@@ -1,5 +1,5 @@
 //
-// File: AuthMiddleware.go
+// File: jwtMiddleware.go
 // Created by Dizzrt on 2023/01/18.
 //
 // Copyright (C) 2023 The oset Authors.
@@ -44,7 +44,7 @@ func abortCtxWithUnhandleError(ctx *gin.Context) {
 	abortCtx(ctx, http.StatusInternalServerError, "authentication failed, unhandle error")
 }
 
-func AuthMiddleware() gin.HandlerFunc {
+func JwtMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		tokenString := ctx.Request.Header.Get("Authorization")
 

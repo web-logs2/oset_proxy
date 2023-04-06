@@ -66,8 +66,8 @@ func Login(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"msg":  "登陆成功",
-		"data": gin.H{"token": token},
+		"msg":   "登陆成功",
+		"token": token,
 	})
 }
 
@@ -84,12 +84,16 @@ func CreateUser(ctx *gin.Context) {
 	ctx.BindJSON(&newUser)
 
 	res := db.Mysql().First(&newUser, "email = ?", newUser.Email)
-	if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+	if res.Error != nil {
+		if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			etlog.L().Error(res.Error.Error(), zap.Int("request_user_id", requestUser.Uid))
+			abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+			return
+		}
+	}
+
+	if res.Error == nil {
 		abortCtx(ctx, http.StatusOK, "邮箱已被占用")
-		return
-	} else if res.Error != nil {
-		etlog.L().Error(res.Error.Error(), zap.Int("request_user_id", requestUser.Uid))
-		abortCtx(ctx, http.StatusInternalServerError, "unknown error")
 		return
 	}
 

@@ -30,7 +30,7 @@ func CollectRoutes(r *gin.Engine) *gin.Engine {
 	sysRoutes.POST("/setinit", api.SetInit)
 
 	userRoutes := r.Group("/user")
-	userRoutes.Use(middleware.AuthMiddleware())
+	userRoutes.Use(middleware.JwtMiddleware())
 	userRoutes.GET("list", controller.GetUserList)
 	userRoutes.GET("info", controller.GetUserInfo)
 	userRoutes.POST("update", controller.SetUserInfo)
@@ -38,7 +38,7 @@ func CollectRoutes(r *gin.Engine) *gin.Engine {
 	userRoutes.DELETE("drop", controller.DropUser)
 
 	appRoutes := r.Group("/app")
-	appRoutes.Use(middleware.AuthMiddleware())
+	appRoutes.Use(middleware.JwtMiddleware())
 	appRoutes.GET("info", controller.GetApp)
 	appRoutes.POST("create", controller.CreateApp)
 	appRoutes.POST("update", controller.UpdateApp)
