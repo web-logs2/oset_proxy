@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"oset/auth"
 	"oset/common"
 	"oset/db"
 
@@ -142,8 +143,44 @@ func DropApp(ctx *gin.Context) {
 
 func GetApp(ctx *gin.Context) {
 	requestUser, _ := ctx.Get("user")
-	aid, err := strconv.Atoi(ctx.Query("aid"))
+	said, isExist := ctx.GetQuery("aid")
 
+	var res *gorm.DB
+	var targetApp model.App
+	if !isExist {
+		res = db.Mysql().First(&targetApp)
+		if res.Error != nil && !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			etlog.L().Error("get app info failed", zap.Error(res.Error))
+
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"code": common.StatusCommonError,
+				"msg":  "error",
+			})
+			ctx.Abort()
+			return
+		}
+
+		jsonBytes, err := json.Marshal(targetApp)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"code": common.StatusUserError,
+				"data": "{}",
+				"msg":  "error",
+			})
+
+			etlog.L().Error("search app error", zap.Error(res.Error))
+			ctx.Abort()
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"msg":      "success",
+			"app_info": string(jsonBytes),
+		})
+		return
+	}
+
+	aid, err := strconv.Atoi(said)
 	if err != nil {
 		etlog.L().Error("get app info failed", zap.Int("aid", aid), zap.Int("uid", requestUser.(model.User).Uid), zap.String("err", err.Error()))
 
@@ -155,9 +192,7 @@ func GetApp(ctx *gin.Context) {
 		return
 	}
 
-	var targetApp model.App
-	res := db.Mysql().Where("aid = ?", aid).First(&targetApp)
-
+	res = db.Mysql().Where("aid = ?", aid).First(&targetApp)
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusOK, gin.H{
@@ -193,8 +228,79 @@ func GetApp(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"code": common.StatusCommonOK,
-		"data": string(jsonBytes),
-		"msg":  "success",
+		"code":     common.StatusCommonOK,
+		"msg":      "success",
+		"app_info": string(jsonBytes),
+	})
+}
+
+func GetAppList(ctx *gin.Context) {
+	// requestUser, _ := ctx.Get("user")
+
+	var appList []model.App
+	result := db.Mysql().Table("apps").Find(&appList)
+	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			etlog.L().Error("failed to fetch app list", zap.Error(result.Error))
+			abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+			return
+		}
+	}
+
+	jsonBytes, err := json.Marshal(appList)
+	if err != nil {
+		etlog.L().Error(err.Error())
+		abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg":      "success",
+		"app_list": string(jsonBytes),
+	})
+}
+
+func GetAppAkSK(ctx *gin.Context) {
+	said, isExist := ctx.GetQuery("aid")
+	if !isExist {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusCommonError,
+			"msg":  "invalid aid",
+		})
+		ctx.Abort()
+		return
+	}
+
+	aid, err := strconv.Atoi(said)
+	if err != nil {
+		etlog.L().Error("get app info failed", zap.Error(err))
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusCommonError,
+			"msg":  "error",
+		})
+		ctx.Abort()
+		return
+	}
+
+	var akskList []auth.AKSKExtension
+	result := db.Mysql().Model(auth.AKSKExtension{}).Where("aid = ?", aid).Find(&akskList)
+
+	if result.Error != nil {
+		etlog.L().Error("failed to get aksk list", zap.Error(result.Error))
+		abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+		return
+	}
+
+	jsonBytes, err := json.Marshal(akskList)
+	if err != nil {
+		etlog.L().Error(err.Error())
+		abortCtx(ctx, http.StatusInternalServerError, "unkonwn error")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg":       "success",
+		"aksk_list": string(jsonBytes),
 	})
 }

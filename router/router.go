@@ -43,6 +43,8 @@ func CollectRoutes(r *gin.Engine) *gin.Engine {
 	appRoutes.POST("create", controller.CreateApp)
 	appRoutes.POST("update", controller.UpdateApp)
 	appRoutes.DELETE("delete", controller.DropApp)
+	appRoutes.GET("list", controller.GetAppList)
+	appRoutes.GET("aksk/list", controller.GetAppAkSK)
 
 	eventRoutes := r.Group("/event")
 	eventRoutes.POST("report/:aid", middleware.AkskMiddleware(), controller.ReportEvent)

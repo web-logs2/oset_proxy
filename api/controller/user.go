@@ -66,8 +66,12 @@ func Login(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"msg":   "登陆成功",
-		"token": token,
+		"msg":    "登陆成功",
+		"token":  token,
+		"name":   user.Uname,
+		"email":  user.Email,
+		"uid":    user.Uid,
+		"avatar": user.Avatar,
 	})
 }
 
@@ -157,8 +161,8 @@ func GetUserList(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"msg":  "success",
-		"data": string(jsonBytes),
+		"msg":       "success",
+		"user_list": string(jsonBytes),
 	})
 }
 
