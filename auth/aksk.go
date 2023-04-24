@@ -15,9 +15,9 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"oset/db"
+	"oset/model"
 	"time"
 
 	"github.com/Dizzrt/etlog"
@@ -30,29 +30,7 @@ var (
 	ErrAccessKeyExpired  = errors.New("access key has expired")
 )
 
-type AKSK struct {
-	Ak         string `gorm:"primaryKey;char(64)" json:"ak"`
-	Sk         string `gorm:"char(64);not null" json:"sk"`
-	Aid        int    `gorm:"index;not null" json:"aid"`
-	ExpireTime int64  `gorm:"default:0" json:"expire_time"`
-}
-
-func (aksk AKSK) MarshalBinary() ([]byte, error) {
-	return json.Marshal(aksk)
-}
-
-func (aksk *AKSK) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, aksk)
-}
-
-type AKSKExtension struct {
-	AKSK
-	Description string
-	CreatedAt   int
-	UpdatedAt   int
-}
-
-func GenerateAKSK(aid int, expireTime time.Duration, description string) (ak string, sk string, err error) {
+func GenerateAKSK(aid int, expireTime time.Duration, description string) (akskFull model.AKSKExtension, err error) {
 	t := time.Now()
 
 	var expireStamp int64
@@ -67,19 +45,19 @@ func GenerateAKSK(aid int, expireTime time.Duration, description string) (ak str
 
 	hash := sha256.New()
 	hash.Write(tbytes)
-	ak = hex.EncodeToString(hash.Sum(nil))
+	ak := hex.EncodeToString(hash.Sum(nil))
 
 	hash.Write([]byte(ak))
-	sk = hex.EncodeToString(hash.Sum(nil))
+	sk := hex.EncodeToString(hash.Sum(nil))
 
-	aksk := AKSK{
+	aksk := model.AKSK{
 		Ak:         ak,
 		Sk:         sk,
 		Aid:        aid,
 		ExpireTime: expireStamp,
 	}
 
-	akskFull := AKSKExtension{
+	akskFull = model.AKSKExtension{
 		AKSK:        aksk,
 		Description: description,
 	}
@@ -105,8 +83,8 @@ func getSK(ak string) (sk string, err error) {
 	sk = db.Redis().Get(rc, ak).Val()
 
 	if sk == "" {
-		var aksk AKSK
-		res := db.Mysql().Model(&AKSKExtension{}).Select("sk", "aid", "expire_time").Where("ak = ?", ak).First(&aksk)
+		var aksk model.AKSK
+		res := db.Mysql().Model(&model.AKSKExtension{}).Select("sk", "aid", "expire_time").Where("ak = ?", ak).First(&aksk)
 		if res.Error != nil {
 			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 				err = ErrNotFoundSecretKey

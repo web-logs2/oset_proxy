@@ -16,6 +16,7 @@ import (
 	"oset/auth"
 	"oset/common"
 	"oset/db"
+	"time"
 
 	"oset/model"
 	"strconv"
@@ -283,8 +284,8 @@ func GetAppAkSK(ctx *gin.Context) {
 		return
 	}
 
-	var akskList []auth.AKSKExtension
-	result := db.Mysql().Model(auth.AKSKExtension{}).Where("aid = ?", aid).Find(&akskList)
+	var akskList []model.AKSKExtension
+	result := db.Mysql().Model(model.AKSKExtension{}).Where("aid = ?", aid).Find(&akskList)
 
 	if result.Error != nil {
 		etlog.L().Error("failed to get aksk list", zap.Error(result.Error))
@@ -302,5 +303,121 @@ func GetAppAkSK(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"msg":       "success",
 		"aksk_list": string(jsonBytes),
+	})
+}
+
+func GenerateAKSK(ctx *gin.Context) {
+	ru, _ := ctx.Get("user")
+	requestUser := ru.(model.User)
+
+	if requestUser.Level < model.USERLEVEL_ADMIN {
+		abortCtx(ctx, http.StatusUnauthorized, "权限不足")
+		return
+	}
+
+	var newAksk model.AKSKExtension
+	ctx.BindJSON(&newAksk)
+
+	var app model.App
+	res := db.Mysql().Where("aid = ?", newAksk.Aid).First(&app)
+
+	if res.Error != nil {
+		etlog.L().Error("generate aksk failed", zap.Error(res.Error))
+		abortCtx(ctx, http.StatusInternalServerError, res.Error.Error())
+		return
+	}
+
+	duration := time.Duration(newAksk.ExpireTime * int64(time.Second))
+	aksk, err := auth.GenerateAKSK(newAksk.Aid, duration, newAksk.Description)
+
+	if err != nil {
+		etlog.L().Error("generate aksk failed", zap.Error(err))
+		abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+		return
+	}
+
+	jsonBytes, err := json.Marshal(aksk)
+	if err != nil {
+		etlog.L().Error("json marshal aksk failed", zap.Error(err))
+		abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg":  "ok",
+		"aksk": string(jsonBytes),
+	})
+}
+
+func DropAKSK(ctx *gin.Context) {
+	requestUser, _ := ctx.Get("user")
+	id, err := strconv.Atoi(ctx.Query("id"))
+	if err != nil {
+		etlog.L().Error("delete aksk failed", zap.Error(err))
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusCommonError,
+			"msg":  "error",
+		})
+		ctx.Abort()
+		return
+	}
+
+	res := db.Mysql().Delete(&model.AKSKExtension{}, id)
+	if res.Error != nil {
+		etlog.L().Error("delete app failed", zap.Int("aid", id), zap.Int("uid", requestUser.(model.User).Uid), zap.Error(res.Error))
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusCommonError,
+			"msg":  "error",
+		})
+		ctx.Abort()
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code": common.StatusCommonOK,
+		"msg":  "success",
+	})
+}
+
+func UpdateAksk(ctx *gin.Context) {
+	ru, _ := ctx.Get("user")
+	requestUser := ru.(model.User)
+
+	if requestUser.Level < model.USERLEVEL_ADMIN {
+		abortCtx(ctx, http.StatusUnauthorized, "权限不足")
+		return
+	}
+
+	var aksk model.AKSKExtension
+	ctx.BindJSON(&aksk)
+
+	t := time.Now()
+	var expireStamp int64
+	duration := time.Duration(aksk.ExpireTime * int64(time.Second))
+
+	if duration > 0 {
+		expireStamp = t.Add(duration).Unix()
+	} else {
+		expireStamp = 0
+	}
+
+	res := db.Mysql().Model(&model.AKSKExtension{}).Where("id = ?", aksk.ID).Updates(model.AKSKExtension{
+		Description: aksk.Description,
+		AKSK: model.AKSK{
+			ExpireTime: expireStamp,
+		},
+	})
+
+	if res.Error != nil {
+		etlog.L().Error("update aksk failed", zap.Error(res.Error))
+		abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg":         "success",
+		"expire_time": expireStamp,
 	})
 }

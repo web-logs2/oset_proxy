@@ -1,34 +1,35 @@
-[log]
-reporter_type = 'proxy'
-reporter_name = 'debug_proxy'
-file_path = 'oset.log'
-max_file_size = 10
-max_backups = 5
-max_age = 30
-is_compress = false
-
-[log.kafka]
-is_enable = true
-host = '127.0.0.1:9092'
-topic = 'log'
-
-[mysql]
-host = 'localhost'
-port = '3306'
-database = 'oset'
-charset = 'utf8'
-loc = 'Asia/Shanghai'
-user = 'root'
-password = '123456'
-
-[redis]
-host = 'localhost'
-port = '6379'
-db = 0
-
 [kafka]
 host = '127.0.0.1:9092'
 
+[log]
+file_path = 'oset.log'
+is_compress = false
+max_age = 30
+max_backups = 5
+max_file_size = 10
+reporter_name = 'debug_proxy'
+reporter_type = 'proxy'
+
+[log.kafka]
+host = '127.0.0.1:9092'
+is_enable = true
+topic = 'log'
+
+[mysql]
+charset = 'utf8'
+database = 'oset'
+host = 'localhost'
+loc = 'Asia/Shanghai'
+password = '123456'
+port = '3306'
+user = 'root'
+
+[redis]
+db = 0
+host = 'localhost'
+port = '6379'
+
 [sys]
-name = 'proxy'
 inited = false
+jwt_key = '5346dd49d383436eaa9028fed9bff78fa5b894708ae77d2d41cb1e1da0ae0634'
+name = 'proxy'

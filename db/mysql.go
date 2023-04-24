@@ -61,6 +61,11 @@ func AutoMigrate() {
 	if err != nil {
 		etlog.L().Panic("failed to migrate app table", zap.Error(err))
 	}
+
+	err = mysqlDB.Set("gorm:table_options", "AUTO_INCREMENT=1001").AutoMigrate(&model.AKSKExtension{})
+	if err != nil {
+		etlog.L().Panic("failed to migrate aksk table", zap.Error(err))
+	}
 }
 
 func Mysql() *gorm.DB {
