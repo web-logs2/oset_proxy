@@ -23,6 +23,7 @@ import (
 
 	"github.com/Dizzrt/etlog"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -59,7 +60,7 @@ func CreateApp(ctx *gin.Context) {
 	}
 
 	if newApp.Icon == "" {
-		newApp.Icon = "/images/defaultIcon.png"
+		newApp.Icon = viper.GetString("sys.self_host") + "/static/stream/defaultIcon.png"
 	}
 
 	res := db.Mysql().Create(&newApp)
@@ -87,10 +88,11 @@ func UpdateApp(ctx *gin.Context) {
 	var newAppInfo model.App
 	ctx.BindJSON(&newAppInfo)
 
-	res := db.Mysql().Model(&model.App{}).Where("aid = ?", newAppInfo.Aid).Updates(model.App{
-		Icon:        newAppInfo.Icon,
-		Name:        newAppInfo.Name,
-		Description: newAppInfo.Description,
+	res := db.Mysql().Model(&model.App{}).Where("aid = ?", newAppInfo.Aid).Updates(map[string]interface{}{
+		"icon":        newAppInfo.Icon,
+		"name":        newAppInfo.Name,
+		"activated":   newAppInfo.Activated,
+		"description": newAppInfo.Description,
 	})
 
 	if res.Error != nil {

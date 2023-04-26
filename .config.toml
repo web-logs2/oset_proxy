@@ -30,6 +30,7 @@ host = 'localhost'
 port = '6379'
 
 [sys]
+self_host = 'http://127.0.0.1:8080'
 inited = false
 jwt_key = '5346dd49d383436eaa9028fed9bff78fa5b894708ae77d2d41cb1e1da0ae0634'
 name = 'proxy'

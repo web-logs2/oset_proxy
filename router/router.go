@@ -10,7 +10,6 @@
 package router
 
 import (
-	"net/http"
 	"oset/api"
 	"oset/api/controller"
 	"oset/middleware"
@@ -21,13 +20,16 @@ import (
 func CollectRoutes(r *gin.Engine) *gin.Engine {
 	r.Use(middleware.GinLogger())
 	r.Use(middleware.CORSMiddleware())
-	r.StaticFS("/image", http.Dir("../static/image"))
 
-	r.POST("/login", controller.Login)
+	r.Static("/static/upload/image", "./static/upload/image")
+	r.POST("/static/upload/image", api.UploadImg)
+	r.GET("/static/stream/:img", api.GetUploadImgStream)
 
 	sysRoutes := r.Group("/sys")
 	sysRoutes.GET("/getinit", api.GetInit)
 	sysRoutes.POST("/setinit", api.SetInit)
+
+	r.POST("/login", controller.Login)
 
 	userRoutes := r.Group("/user")
 	userRoutes.Use(middleware.JwtMiddleware())

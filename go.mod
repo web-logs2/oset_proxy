@@ -15,7 +15,10 @@ require (
 
 require (
 	github.com/Shopify/sarama v1.38.1 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/eapache/go-resiliency v1.3.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230111030713-bf00bc1b83b6 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
@@ -72,4 +75,6 @@ require (
 	github.com/Dizzrt/etlog v0.0.0-20230223134043-102cda267be0
 	github.com/Dizzrt/etstream v0.0.0
 	github.com/Dizzrt/go-sse v0.0.0-20210127090701-c17ce60f95eb
+	github.com/google/uuid v1.3.0
+	github.com/redis/go-redis/v9 v9.0.2
 )
