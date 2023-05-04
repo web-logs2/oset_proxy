@@ -15,6 +15,7 @@ import (
 	"math/rand"
 	"net/http"
 	"oset/auth"
+	"oset/common"
 	"oset/db"
 	"oset/model"
 	"regexp"
@@ -130,8 +131,15 @@ func CreateUser(ctx *gin.Context) {
 		return
 	}
 
+	jsonBytes, err := json.Marshal(newUser)
+	if err != nil {
+		abortCtx(ctx, http.StatusInternalServerError, "unknown error")
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"msg": "创建成功",
+		"msg":       "创建成功",
+		"user_info": string(jsonBytes),
 	})
 }
 
@@ -236,10 +244,10 @@ func SetUserInfo(ctx *gin.Context) {
 		return
 	}
 
-	res := db.Mysql().Model(&model.User{}).Where("uid = ?", targetUser.Uid).Updates(model.UserInfo{
-		Uname:  targetUser.Uname,
-		Email:  targetUser.Email,
-		Avatar: targetUser.Avatar,
+	res := db.Mysql().Model(&model.User{}).Where("uid = ?", targetUser.Uid).Updates(map[string]interface{}{
+		"uname":     targetUser.Uname,
+		"email":     targetUser.Email,
+		"activated": targetUser.Activated,
 	})
 
 	if res.Error != nil {
@@ -256,10 +264,21 @@ func SetUserInfo(ctx *gin.Context) {
 func DropUser(ctx *gin.Context) {
 	ru, _ := ctx.Get("user")
 	requestUser := ru.(model.User)
-	targetUid := ctx.GetInt("uid")
 
 	if requestUser.Level < model.USERLEVEL_ADMIN {
 		abortCtx(ctx, http.StatusUnauthorized, "权限不足")
+		return
+	}
+
+	targetUid, err := strconv.Atoi(ctx.Query("uid"))
+	if err != nil {
+		etlog.L().Error(err.Error())
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code": common.StatusCommonError,
+			"msg":  "error",
+		})
+		ctx.Abort()
 		return
 	}
 
