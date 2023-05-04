@@ -15,3 +15,7 @@
 # vendor/
 
 *.log
+
+static/upload
+
+.DS_Store
